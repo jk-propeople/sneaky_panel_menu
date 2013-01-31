@@ -1,0 +1,179 @@
+<?php
+
+/**
+ * @author 32i http://drupal.org/user/292632
+ *
+ */
+
+/**
+ * @file
+ * Main file for the sneaky_panel_menu module.
+ * @todo - add settings page with selection what menu to make 'sneakable'
+ */
+
+/**
+ * Implementation of hook_init()
+ */
+function sneaky_panel_menu_init() {
+  drupal_add_css(drupal_get_path('module', 'sneaky_panel_menu') . '/sneaky_panel_menu.css');
+  drupal_add_js(drupal_get_path('module', 'sneaky_panel_menu') . '/sneaky_panel_menu.js');
+}
+
+/**
+ * Implementation of hook_menu_form_later()
+ */
+function sneaky_panel_menu_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'menu_edit_item') {
+    $menus = variable_get('sneaky_menus', array());
+    // get names of mini-panels.
+    $options = _sneaky_panel_menu_panels_list();
+    $form['sneaky_menu_panel'] = array(
+      '#type' => 'select',
+      '#title' => t('Sneaky content'),
+      '#options' => $options,
+      '#default_value' => (isset($menus['menu-' . $form['mlid']['#value']])) ? $menus['menu-' . $form['mlid']['#value']] : '',
+      '#description' => t('Pick the right mini-panel and this menu element become really sneaky and will display dropdown mega menu on hover.'),
+      '#weight' => 1,
+    );
+    //we need to save the chosen panel.
+    $form['#submit'][] = 'sneaky_panel_menu_form_submit';
+  }
+}
+
+/**
+ * Provides list of mini panels
+ */
+function _sneaky_panel_menu_panels_list() {
+  $minis = panels_mini_load_all();
+  $panels = array(0 => 'None');
+  foreach ($minis as $panel_mini) {
+    if (empty($mini->disabled)) {
+      $panels[$panel_mini->name] = t('@title', array('@title' => $panel_mini->admin_title));
+    }
+  }
+  return (count($panels)) ? $panels : null;
+}
+
+/**
+ * Implementation of hook_menu_form_submit()
+ */
+function sneaky_panel_menu_form_submit($form, &$form_state) { 
+  $menus = variable_get('sneaky_menus', array());
+  $mlid = $form_state['values']['mlid'];
+  $panel_name = $form_state['input']['sneaky_menu_panel'];
+  if ($panel_name) {
+    $menus['menu-' . $mlid] = $panel_name;
+  }elseif(isset($menus['menu-' . $mlid])){
+    unset($menus['menu-' . $mlid]);
+  }
+  unset($menus['menu-0']);
+  variable_set('sneaky_menus', $menus);
+}
+
+/**
+ * Implementation of hook_menu_uninstall()
+ */
+function sneaky_panel_menu_uninstall() {
+  variable_del('sneaky_menus');
+}
+
+/**
+ * Implemenentation of hook_menu_theme
+ */
+function sneaky_panel_menu_theme($existing, $type, $theme, $path) {
+  return array(
+    'links__system_main_menu' => array(
+      'variables' => array(),
+    )
+  );
+}
+
+/**
+ * Override system_main_menu there
+ */
+function theme_links__system_main_menu($variables) {
+  $links = $variables['links'];
+  $attributes = $variables['attributes'];
+  $heading = (isset($variables['heading'])) ? $variables['heading'] : false;
+  global $language_url;
+  $output = '';
+
+  $sneaky_menus = variable_get('sneaky_menus', array());
+
+  if (count($links) > 0) {
+    $output = '';
+
+    // Treat the heading first if it is present to prepend it to the
+    // list of links.
+    if (!empty($heading)) {
+      if (is_string($heading)) {
+        // Prepare the array that will be used when the passed heading
+        // is a string.
+        $heading = array(
+          'text' => $heading,
+          // Set the default level of the heading. 
+          'level' => 'h2',
+        );
+      }
+      $output .= '<' . $heading['level'];
+      if (!empty($heading['class'])) {
+        $output .= drupal_attributes(array('class' => $heading['class']));
+      }
+      $output .= '>' . check_plain($heading['text']) . '</' . $heading['level'] . '>';
+    }
+
+    $output .= '<ul' . drupal_attributes($attributes) . '>';
+
+    $num_links = count($links);
+    $i = 1;
+
+    foreach ($links as $key => $link) {
+      $class = array($key);
+      if (isset($sneaky_menus[$key])) {
+        $class[] = 'sneaky-item';
+      }
+
+      // Add first, last and active classes to the list of links to help out themers.
+      if ($i == 1) {
+        $class[] = 'first';
+      }
+      if ($i == $num_links) {
+        $class[] = 'last';
+      }
+      if (isset($link['href']) && ($link['href'] == $_GET['q'] || ($link['href'] == '<front>' && drupal_is_front_page()))
+        && (empty($link['language']) || $link['language']->language == $language_url->language)) {
+        $class[] = 'active';
+      }
+      $output .= '<li' . drupal_attributes(array('class' => $class)) . '>';
+
+      if (isset($link['href'])) {
+        // Pass in $link as $options, they share the same keys.
+        $output .= l($link['title'], $link['href'], $link);
+      } elseif (!empty($link['title'])) {
+        // Some links are actually not links, but we wrap these in <span> for adding title and class attributes.
+        if (empty($link['html'])) {
+          $link['title'] = check_plain($link['title']);
+        }
+        $span_attributes = '';
+        if (isset($link['attributes'])) {
+          $span_attributes = drupal_attributes($link['attributes']);
+        }
+        $output .= '<span' . $span_attributes . '>' . $link['title'] . '</span>';
+      }
+
+      $i++;
+      if (isset($sneaky_menus[$key])) {
+        $mini_panel = panels_mini_block_view($sneaky_menus[$key]);
+        if (!empty($mini_panel['content'])) {
+          $output .= '<div class="sneaky-panel">' . $mini_panel['content'] . '</div>';
+        }
+      }
+
+      $output .= "</li>\n";
+    }
+
+    $output .= '</ul>';
+  }
+
+  return $output;
+}

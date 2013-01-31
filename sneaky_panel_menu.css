@@ -1,0 +1,41 @@
+.sneaky-item .sneaky-panel{
+  display:none;
+}
+
+.sneaky-panel{
+    width:938px;
+    background:#efefe7;
+    position:absolute;
+    left:0px;
+    top:54px;
+    border:1px solid #c8d2cb;
+    z-index:500;
+}
+.sneaky-wrapper{
+    margin:30px 10px;
+    background:url("bg-fourcol.png") repeat-y;
+}
+.grid_12 .sneaky-wrapper .sneaky-custom-grid{
+    width:200px;
+}
+
+.sneaky-wrapper .sneaky-custom-grid .pane-title{
+    font:bold 25px "Droid Sans";
+    color:#77787b;
+    margin-bottom:10px;
+}
+
+.sneaky-wrapper .sneaky-custom-grid p a{
+    display:block;
+    font:14px "Droid Sans";
+    color:#000;
+    margin:10px 0;
+}
+.sneaky-wrapper .sneaky-custom-grid p a:hover{
+    color: #82AEB7;
+}
+.sneaky-wrapper .sneaky-custom-grid p a div{
+    float: left;
+    margin-right: 5px;
+    color: #82AEB7;
+}

@@ -1,0 +1,8 @@
+name = Sneaky panel menu
+package = Propeople
+description = Provides best of us with functionality of creating mega menu dropdowns from panels.
+dependencies[] = panels
+dependencies[] = panels_mini
+dependencies[] = ctools
+core = 7.x
+version = 7.x.-0.1
