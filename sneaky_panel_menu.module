@@ -91,9 +91,7 @@ function sneaky_panel_menu_theme($existing, $type, $theme, $path) {
 /**
  * Implementation of hook hook_links__system_main_menu
  */
-function sneaky_panel_menu_links__system_main_menu($variables) {
-  dpm($variables);
-  die();
+function theme_links__system_main_menu($variables) {
   $links = $variables['links'];
   $attributes = $variables['attributes'];
   $heading = (isset($variables['heading'])) ? $variables['heading'] : false;
